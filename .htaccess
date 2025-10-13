@@ -1,0 +1,7 @@
+<FilesMatch "\.(pdf)$">
+    RewriteEngine On
+    RewriteCond %{HTTP_COOKIE} !^.*PHPSESSID=.*$ [NC]
+    RewriteRule ^.*$ /index.php [R=302,L]
+</FilesMatch>
+
+ErrorDocument 404 /404.php
