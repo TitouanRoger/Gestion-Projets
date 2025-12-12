@@ -11,7 +11,8 @@
 // ============================================================
 
 declare(strict_types=1);
-session_start();
+require_once __DIR__ . '/secure_session.php';
+secure_session_start();
 require_once __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/file_crypto.php';
 
@@ -22,7 +23,7 @@ function jsonOut($data, int $code = 200): void {
     exit();
 }
 
-if (!isset($_SESSION['user_id'])) jsonOut(['error' => 'Non authentifié'], 401);
+if (!validate_session()) jsonOut(['error' => 'Non authentifié'], 401);
 
 $userId = (int)($_SESSION['user_id']);
 $projectId = isset($_REQUEST['project_id']) ? (int)$_REQUEST['project_id'] : 0;

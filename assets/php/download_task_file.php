@@ -7,12 +7,13 @@
 // - Autorisations: owner, membre du projet ou assigné à la tâche
 // - Si manifest indique chiffrement: déchiffre avant l'envoi
 // ============================================================
-session_start();
+require_once 'secure_session.php';
+secure_session_start();
 require 'db_connect.php';
 require_once 'file_crypto.php';
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(403);
+if (!validate_session()) {
+    http_response_code(401);
     echo 'Accès refusé';
     exit();
 }

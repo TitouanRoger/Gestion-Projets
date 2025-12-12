@@ -10,12 +10,13 @@
 // Chaque action vérifie que l'utilisateur courant est autorisé
 // (propriétaire du projet) avant de modifier les données.
 // ============================================================
-session_start();
+require_once 'secure_session.php';
+secure_session_start();
 require 'db_connect.php';
 require 'log_activity.php';
 
 // Redirection de sécurité : si non connecté, renvoyer à l'authentification
-if (!isset($_SESSION['user_id'])) {
+if (!validate_session()) {
     header("Location: ../../auth.php");
     exit();
 }

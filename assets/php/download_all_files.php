@@ -8,15 +8,16 @@
 // - Déchiffre les fichiers si manifest.json indique un stockage chiffré
 // - Stream le ZIP en sortie avec en-têtes HTTP appropriés
 // ============================================================
-session_start();
+require_once 'secure_session.php';
+secure_session_start();
 require_once 'db_connect.php';
 require_once 'file_crypto.php';
 
 // Vérifier uniquement ZIP (RAR en création n'est pas supporté nativement par PHP)
 $zipAvailable = class_exists('ZipArchive');
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(403);
+if (!validate_session()) {
+    http_response_code(401);
     echo 'Accès refusé';
     exit();
 }

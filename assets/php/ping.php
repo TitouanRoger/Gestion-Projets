@@ -9,10 +9,16 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once __DIR__ . '/secure_session.php';
+secure_session_start();
 require_once __DIR__ . '/session_security.php';
 
 try {
+    // Vérifie la session et rafraîchit le remember-me
+    if (!validate_session()) {
+        http_response_code(401);
+        exit();
+    }
     // Met à jour l'activité (timestamp) sans produire de sortie
     session_touch_activity();
     http_response_code(204);

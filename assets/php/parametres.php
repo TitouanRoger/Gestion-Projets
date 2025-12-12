@@ -9,12 +9,13 @@
 // - Utilise log_activity() et purge_user_logs()
 // - Supprime fichiers uploadés (tâches, messages, dépôt de code)
 // ============================================================
-session_start();
+require_once 'secure_session.php';
+secure_session_start();
 require 'db_connect.php'; // Connexion à la BDD ($pdo)
 require 'log_activity.php'; // Système de journalisation
 
-// Assurez-vous que l'utilisateur est connecté
-if (!isset($_SESSION['user_id'])) {
+// Assurez-vous que l'utilisateur est connecté (et rafraîchit le remember-me)
+if (!validate_session()) {
     header("Location: ../../auth.php");
     exit();
 }

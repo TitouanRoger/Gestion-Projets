@@ -11,13 +11,14 @@
 // - project_id valide
 // - Rôle (certaines actions réservées au Chef de projet)
 // ============================================================
-session_start();
+require_once 'secure_session.php';
+secure_session_start();
 // Remonte d'un niveau supplémentaire pour atteindre le dossier racine si c'est nécessaire
 require 'db_connect.php';
 require_once 'file_crypto.php';
 
 // --- Redirection de Sécurité si non connecté ---
-if (!isset($_SESSION['user_id'])) {
+if (!validate_session()) {
     header("Location: ../../auth.php");
     exit();
 }

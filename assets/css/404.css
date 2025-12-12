@@ -1,0 +1,121 @@
+/* Styles de la page 404 alignés sur le thème du dashboard */
+
+:root {
+    --bg: #f4f7f9;
+    --card-bg: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #4b5563;
+    --accent: #1e293b;
+    --accent-strong: #334155;
+    --border: #e2e8f0;
+    --shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--text-main);
+    font-family: Arial, sans-serif;
+    padding: 24px;
+}
+
+.card {
+    background: var(--card-bg);
+    padding: 40px;
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    max-width: 540px;
+    width: 100%;
+    text-align: center;
+    border: 1px solid var(--border);
+}
+
+.code {
+    display: inline-block;
+    background: #e5e7eb;
+    color: var(--text-main);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+h1 {
+    font-size: 40px;
+    margin: 0 0 10px;
+    letter-spacing: -0.5px;
+    color: var(--text-main);
+}
+
+p {
+    margin: 0 0 22px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    font-size: 15px;
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+a.button {
+    text-decoration: none;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-weight: 700;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease;
+    border: 1px solid transparent;
+}
+
+a.primary {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+    box-shadow: 0 10px 24px rgba(30, 41, 59, 0.2);
+}
+
+a.primary:hover {
+    background: var(--accent-strong);
+    transform: translateY(-1px);
+    box-shadow: 0 14px 28px rgba(30, 41, 59, 0.25);
+}
+
+a.secondary {
+    background: #f8fafc;
+    color: var(--text-main);
+    border-color: var(--border);
+}
+
+a.secondary:hover {
+    background: #eef2f6;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.06);
+}
+
+@media (max-width: 640px) {
+    .card {
+        padding: 28px 22px;
+    }
+
+    h1 {
+        font-size: 32px;
+    }
+
+    p {
+        font-size: 14px;
+    }
+
+    a.button {
+        width: 100%;
+        text-align: center;
+    }
+}

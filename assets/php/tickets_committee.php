@@ -6,11 +6,12 @@
 // démarquer une nouvelle phase de comité. Réservé au créateur
 // du projet. Journalise l'action.
 // ============================================================
-session_start();
+require_once 'secure_session.php';
+secure_session_start();
 require 'db_connect.php';
 require 'log_activity.php';
 
-if (!isset($_SESSION['user_id'])) {
+if (!validate_session()) {
     header('Location: ../../auth.php');
     exit();
 }

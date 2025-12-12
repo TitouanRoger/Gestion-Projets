@@ -9,9 +9,16 @@
 // - Supprimer le projet entier
 // ============================================================
 
-session_start();
+require_once 'assets/php/secure_session.php';
+secure_session_start();
 require 'assets/php/db_connect.php';
 require_once 'assets/php/session_security.php';
+
+// Vérifie la session et maintient le cookie "Se souvenir de moi"
+if (!validate_session()) {
+    header("Location: auth.php");
+    exit();
+}
 
 enforce_inactivity_timeout(15 * 60, 'assets/php/logout.php', true);
 
@@ -23,12 +30,6 @@ enforce_inactivity_timeout(15 * 60, 'assets/php/logout.php', true);
 // - Projet doit exister en base de données
 // - Utilisateur doit être le créateur (createur_id)
 // ============================================================
-
-if (!isset($_SESSION['user_id'])) {
-    header("Location: auth.php");
-    // Redirige l'utilisateur non connecté vers la page d'authentification
-    exit();
-}
 
 $user_id = $_SESSION['user_id'];
 $project_id = $_GET['id'] ?? null;

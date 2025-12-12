@@ -6,11 +6,12 @@
 // Autorise: émetteur, destinataire ou créateur (membre projet vérifié)
 // Déchiffre la pièce jointe (AES-256-GCM) avant l'envoi au client.
 // ============================================================
-session_start();
+require_once 'secure_session.php';
+secure_session_start();
 require_once 'db_connect.php';
 require_once 'message_crypto.php';
 
-if (!isset($_SESSION['user_id'])) { http_response_code(403); echo 'Accès refusé'; exit(); }
+if (!validate_session()) { http_response_code(401); echo 'Accès refusé'; exit(); }
 $user_id = (int)$_SESSION['user_id'];
 $project_id = isset($_GET['project_id']) ? (int)$_GET['project_id'] : 0;
 $message_id = isset($_GET['message_id']) ? (int)$_GET['message_id'] : 0;

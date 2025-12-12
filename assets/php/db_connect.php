@@ -12,7 +12,7 @@ require_once 'auth_logic.php'; // Charge les variables du .env
 
 // --- PARAMÈTRES DE CONNEXION CHARGÉS DE .env ---
 $host = $_ENV['DB_HOST'] ?? 'localhost';
-$db = $_ENV['DB_NAME'] ?? 'gestion_projet';
+$db = $_ENV['DB_NAME'] ?? 'gestion_projets';
 $user = $_ENV['DB_USER'] ?? 'root';
 $pass = $_ENV['DB_PASS'] ?? '';
 
@@ -34,7 +34,7 @@ $options = [
 
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
-// ============================================================
+    // ============================================================
 // GESTION DES ERREURS
 // ============================================================
 // En cas d'échec de connexion, affiche message générique

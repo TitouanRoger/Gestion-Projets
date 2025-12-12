@@ -173,6 +173,9 @@ function validate_session(int $timeout_seconds = 1800): bool
     // Mettre à jour l'activité
     update_session_activity();
 
+    // Prolonger le cookie si "Se souvenir de moi" est actif
+    refresh_remember_me_cookie();
+
     return true;
 }
 

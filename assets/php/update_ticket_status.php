@@ -7,10 +7,11 @@
 // - Vérifie que l'utilisateur est le créateur du projet
 // - Met à jour le statut: 'nouveau' | 'approuvé' | 'refusé'
 // ============================================================
-session_start();
+require_once 'secure_session.php';
+secure_session_start();
 require 'db_connect.php';
 
-if (!isset($_SESSION['user_id'])) {
+if (!validate_session()) {
     header("Location: ../../auth.php");
     exit();
 }

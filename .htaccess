@@ -10,6 +10,9 @@
     Require all denied
 </Files>
 
+# --- PAGE 404 PERSONNALISÉE ---
+ErrorDocument 404 /404.php
+
 # --- PROTECTION DES FICHIERS SENSIBLES ---
 # Bloquer l'accès aux fichiers de configuration et sauvegarde
 <FilesMatch "\.(env|log|sql|bak|backup|swp|old|txt|md)$">

@@ -8,11 +8,12 @@
 // - Vérifie l'accès au projet (créateur ou membre)
 // - Insère le ticket avec statut initial 'nouveau'
 // ============================================================
-session_start();
+require_once 'secure_session.php';
+secure_session_start();
 require 'db_connect.php';
 
-if (!isset($_SESSION['user_id'])) {
-    // Redirection si non connecté
+if (!validate_session()) {
+    // Redirection si non connecté ou session invalide
     header("Location: ../../auth.php");
     exit();
 }

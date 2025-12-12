@@ -8,11 +8,12 @@
 // - Insère (nom, description nullable, createur_id)
 // - Redirige vers l'onglet Projets avec un message (success/error)
 // ============================================================
-session_start();
+require_once 'secure_session.php';
+secure_session_start();
 require 'db_connect.php'; // Connexion à la BDD ($pdo)
 
-// Assurez-vous que l'utilisateur est connecté
-if (!isset($_SESSION['user_id'])) {
+// Assurez-vous que l'utilisateur est connecté et que la session est valide
+if (!validate_session()) {
     header("Location: ../../auth.php");
     exit();
 }
