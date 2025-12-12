@@ -1,677 +1,420 @@
+<?php
+// ============================================================================
+// PAGE PRINCIPALE DU DASHBOARD
+// ============================================================================
+// Affiche la liste des projets et les paramètres utilisateur
+// Accessible uniquement aux utilisateurs connectés
+
+require_once 'assets/php/secure_session.php';
+require 'assets/php/db_connect.php';
+
+// Démarrer la session sécurisée
+secure_session_start();
+
+// Vérification de l'authentification avec timeout de 30 minutes (ou 30 jours si "remember me")
+$timeout = 30 * 60; // 30 minutes par défaut
+if (isset($_SESSION['remember_me']) && $_SESSION['remember_me']) {
+    $timeout = 30 * 24 * 3600; // 30 jours
+}
+
+// Vérifier la session et rediriger si invalide
+if (!validate_session($timeout)) {
+    header("Location: auth.php?error=" . urlencode("Veuillez vous connecter pour accéder à cette page."));
+    exit();
+}
+
+$user_id = $_SESSION['user_id'];
+
+// Vérifier que le compte existe toujours en base de données
+try {
+    $stmt_check = $pdo->prepare("SELECT id FROM utilisateurs WHERE id = ?");
+    $stmt_check->execute([$user_id]);
+    if (!$stmt_check->fetch()) {
+        // Le compte n'existe plus, détruire la session
+        secure_session_destroy();
+        header("Location: auth.php?error=" . urlencode("Votre compte n'existe plus. Veuillez contacter l'administrateur."));
+        exit();
+    }
+} catch (\PDOException $e) {
+    // En cas d'erreur BDD, on continue mais on log l'erreur
+    error_log("Erreur vérification compte: " . $e->getMessage());
+}
+
+// ============================================================================
+// RÉCUPÉRATION DES DONNÉES UTILISATEUR
+// ============================================================================
+try {
+    $stmt = $pdo->prepare("SELECT prenom, nom, email FROM utilisateurs WHERE id = ?");
+    $stmt->execute([$user_id]);
+    $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
+} catch (\PDOException $e) {
+    $user_data = ['prenom' => 'Erreur', 'nom' => 'BDD', 'email' => 'erreur@bdd.com'];
+}
+
+// ============================================================================
+// GESTION DES MESSAGES D'ALERTE ET SECTION ACTIVE
+// ============================================================================
+$alert_message = $_GET['success'] ?? $_GET['error'] ?? null;
+$alert_status = isset($_GET['success']) ? 'success' : (isset($_GET['error']) ? 'error' : null);
+
+// Section initiale par défaut
+$initial_section = 'projets';
+
+// Si la section est explicitement demandée, on la respecte en priorité
+if (isset($_GET['section'])) {
+    $initial_section = $_GET['section'];
+} else {
+    // Sinon, on déduit la section selon la provenance et les messages
+    if ($alert_message) {
+        if (isset($_GET['from']) && $_GET['from'] === 'projet') {
+            $initial_section = 'projets';
+        } elseif (!isset($_GET['from']) && (isset($_GET['success']) || isset($_GET['error']))) {
+            $initial_section = 'parametres';
+        }
+    }
+}
+
+// Mise à jour des données en session
+$_SESSION['user_prenom'] = $user_data['prenom'] ?? '';
+$_SESSION['user_nom'] = $user_data['nom'] ?? '';
+
+// ============================================================================
+// RÉCUPÉRATION DES PROJETS DE L'UTILISATEUR
+// ============================================================================
+// Récupère tous les projets où l'utilisateur est créateur OU membre
+
+$projets = [];
+$project_member_counts = [];
+
+try {
+    // Requête UNION pour récupérer projets créés ET projets où l'utilisateur est membre
+    $final_query = "
+        (
+            SELECT 
+                p.id, 
+                p.nom_projet, 
+                p.description, 
+                'Chef de projet' AS user_role
+            FROM projets p
+            WHERE p.createur_id = ?
+        )
+        UNION DISTINCT
+        (
+            SELECT 
+                p.id, 
+                p.nom_projet, 
+                p.description, 
+                pm.role AS user_role
+            FROM projets p
+            JOIN projet_membres pm ON p.id = pm.projet_id
+            WHERE pm.utilisateur_id = ?
+        )
+        ORDER BY id DESC
+    ";
+
+    $stmt = $pdo->prepare($final_query);
+    $stmt->execute([$user_id, $user_id]);
+    $projets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Compte le nombre de membres pour chaque projet
+    if (!empty($projets)) {
+        $project_ids = array_column($projets, 'id');
+        $placeholders = str_repeat('?,', count($project_ids) - 1) . '?';
+
+        // Compte les membres ajoutés (hors créateur)
+        $stmt_count = $pdo->prepare("
+            SELECT projet_id, COUNT(*) AS member_count 
+            FROM projet_membres 
+            WHERE projet_id IN ($placeholders) 
+            GROUP BY projet_id
+        ");
+        $stmt_count->execute($project_ids);
+
+        // +1 pour inclure le créateur dans le total
+        while ($row = $stmt_count->fetch(PDO::FETCH_ASSOC)) {
+            $project_member_counts[$row['projet_id']] = (int) $row['member_count'] + 1;
+        }
+
+        // Projets sans membres ajoutés = seulement le créateur (1)
+        foreach ($projets as $projet) {
+            if (!isset($project_member_counts[$projet['id']])) {
+                $project_member_counts[$projet['id']] = 1;
+            }
+        }
+    }
+
+} catch (\PDOException $e) {
+    error_log("Erreur de BDD lors de la récupération des projets/membres: " . $e->getMessage());
+    $projets = [];
+}
+
+?>
 <!DOCTYPE html>
 <html lang="fr">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion Projet</title>
-    <link rel="icon" href="images/logo.jpg">
-    <?php
-    function loadEnv($file)
-    {
-        if (!file_exists($file)) {
-            throw new Exception("Le fichier .env est introuvable");
-        }
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+    <meta name="robots" content="index,follow">
+    <meta name="description"
+        content="Gestion Projets – créez, suivez et collaborez sur vos projets, tâches, tickets, documents et messages en équipe.">
+    <meta name="keywords"
+        content="gestion de projet, collaboration, tâches, tickets, documents, messages, équipe, dashboard">
+    <link rel="canonical"
+        href="<?php echo htmlspecialchars((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\') . '/index.php'); ?>">
 
-        $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        foreach ($lines as $line) {
-            if (strpos($line, '#') === 0) {
-                continue;
-            }
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Dashboard – Gestion Projets">
+    <meta property="og:description"
+        content="Gérez vos projets et collaborez avec votre équipe: tâches, tickets, documents et messages.">
+    <meta property="og:url"
+        content="<?php echo htmlspecialchars((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\') . '/index.php'); ?>">
+    <meta property="og:image"
+        content="<?php echo htmlspecialchars((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST']); ?>/assets/img/favicon.svg">
+    <meta property="og:locale" content="fr_FR">
 
-            list($key, $value) = explode('=', $line, 2);
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Dashboard – Gestion Projets">
+    <meta name="twitter:description" content="Gérez vos projets et collaborez avec votre équipe.">
+    <meta name="twitter:image"
+        content="<?php echo htmlspecialchars((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST']); ?>/assets/img/favicon.svg">
 
-            putenv(trim($key) . '=' . trim($value));
-        }
-    }
-
-    loadEnv(__DIR__ . '/../.env');
-
-    $dbhost = getenv('DB_HOST');
-    $dbname = getenv('DB_NAME');
-    $dbuser = getenv('DB_USER');
-    $dbpass = getenv('DB_PASS');
-    $project = getenv('PROJECT');
-
-    try {
-        $db = new PDO("mysql:host=$dbhost;dbname=$dbname", $dbuser, $dbpass);
-        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    } catch (PDOException $e) {
-        die("Erreur de connexion à la base de données : " . $e->getMessage());
-    }
-
-    ob_start();
-    session_start();
-    ?>
-    <style>
-        :root {
-            --background-color: #d1d5db;
-            --primary-color: #fa8619;
-            --secondary-color: #e69017;
-            --text-color: #ffffff;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            background-color: var(--background-color);
-            margin: 0;
-            overflow-x: hidden;
-        }
-
-        .sidebar {
-            background-color: var(--primary-color);
-            color: var(--text-color);
-            width: 200px;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            padding: 20px;
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-            overflow-y: auto;
-            transition: transform 0.5s;
-        }
-
-        .sidebar a {
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .logo {
-            width: 100%;
-            margin-bottom: 20px;
-        }
-
-        .content {
-            margin-left: 250px;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            box-sizing: border-box;
-            flex-direction: column;
-            overflow-x: auto;
-        }
-
-        .content h1 {
-            font-weight: bold;
-            font-size: 24px;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        .content p {
-            font-size: 16px;
-            line-height: 1.5;
-        }
-
-        .table {
-            border-collapse: collapse;
-            width: 100%;
-            max-width: 100%;
-            overflow-x: auto;
-            display: block;
-        }
-
-        .table th,
-        .table td {
-            border: 1px solid #dddddd;
-            text-align: left;
-            padding: 8px;
-        }
-
-        .table th {
-            background-color: #f2f2f2;
-        }
-
-        .table tr {
-            background-color: #ffffff;
-        }
-
-        .toggle-sidebar {
-            position: absolute;
-            right: 3%;
-        }
-
-        .toggle-sidebar:hover {
-            cursor: pointer;
-        }
-
-        @media (max-width: 435px) {
-            .sidebar {
-                width: 100%;
-                height: 100vh;
-                position: fixed;
-                transform: translateX(-90%);
-                padding: 10px;
-            }
-
-            .content {
-                margin-left: 30px;
-                padding-top: 20px;
-            }
-
-            .sidebar .logo {
-                width: 150px;
-            }
-
-            .sidebar .onglets {
-                padding-left: 30%;
-            }
-
-            .gestion {
-                left: 30%;
-            }
-
-            .connexion {
-                left: 30%;
-            }
-
-            .content h1 {
-                font-size: 32px;
-            }
-
-            .content p {
-                font-size: 18px;
+    <!-- Schema.org JSON-LD: WebSite + SearchAction -->
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "Gestion Projets",
+            "url": "<?php echo htmlspecialchars((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\') . '/'); ?>",
+            "inLanguage": "fr-FR",
+            "description": "Plateforme de gestion de projets: tâches, tickets, documents et messages.",
+            "potentialAction": {
+                "@type": "SearchAction",
+                "target": "<?php echo htmlspecialchars((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\') . '/index.php'); ?>?q={search_term_string}",
+                "query-input": "required name=search_term_string"
             }
         }
-
-        .message {
-            padding: 15px;
-            color: var(--text-color);
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 10px;
-            text-align: center;
-            width: 300px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            margin: auto;
-        }
-
-        .gestion {
-            display: block;
-            margin: 60px auto;
-            padding: 10px;
-            background-color: var(--primary-color);
-            color: var(--text-color);
-            text-align: center;
-            border: 2px solid white;
-            border-radius: 20px;
-            text-decoration: none;
-            width: 200px;
-            box-sizing: border-box;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        .gestion:hover {
-            background-color: var(--secondary-color);
-        }
-
-        .connexion {
-            display: block;
-            margin: 10px auto;
-            padding: 10px;
-            background-color: var(--primary-color);
-            color: var(--text-color);
-            text-align: center;
-            border: 2px solid white;
-            border-radius: 20px;
-            text-decoration: none;
-            width: 200px;
-            box-sizing: border-box;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        .connexion:hover {
-            background-color: var(--secondary-color);
-        }
-
-        .button {
-            display: block;
-            padding: 10px;
-            font-size: 18px;
-            background-color: var(--primary-color);
-            border: none;
-            color: var(--text-color);
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .button:hover {
-            background-color: var(--secondary-color);
-        }
-
-        form {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 20px;
-        }
-
-        label {
-            margin-bottom: 10px;
-        }
-
-        input[type="text"] {
-            padding: 10px;
-            margin-bottom: 20px;
-            border: none;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        button[type="submit"] {
-            background-color: var(--primary-color);
-            color: var(--text-color);
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        button[type="submit"]:hover {
-            background-color: var(--secondary-color);
-        }
-
-        select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border: none;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        @media (max-width: 435px) {
-            .message {
-                max-width: 150px;
-                width: 100%;
-            }
-
-            .button {
-                padding: 10px;
-                font-size: 14px;
-            }
-        }
-    </style>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const toggleButton = document.querySelector('.toggle-sidebar');
-            const sidebar = document.querySelector('.sidebar');
-
-            if (window.innerWidth <= 435) {
-                toggleButton.style.display = 'block';
-            } else {
-                toggleButton.style.display = 'none';
-            }
-
-            toggleButton.addEventListener('click', function () {
-                if (sidebar.style.transform === 'translateX(-20%)') {
-                    sidebar.style.transform = 'translateX(-90%)';
-                } else {
-                    sidebar.style.transform = 'translateX(-20%)';
-                }
-            });
-
-            document.addEventListener('click', function (e) {
-                if (sidebar.style.transform === 'translateX(-20%)' && !sidebar.contains(e.target) && !toggleButton.contains(e.target)) {
-                    sidebar.style.transform = 'translateX(-90%)';
-                }
-            });
-        });
-
-        window.addEventListener('resize', function () {
-            const toggleButton = document.querySelector('.toggle-sidebar');
-            const sidebar = document.querySelector('.sidebar');
-
-            if (window.innerWidth <= 435) {
-                toggleButton.style.display = 'block';
-                sidebar.style.transform = 'translateX(-90%)';
-            } else {
-                toggleButton.style.display = 'none';
-            }
-        });
-    </script>
+        </script>
+    <title>Gestion Projets – Dashboard et Collaboration</title>
+    <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+    <link rel="stylesheet" href="assets/css/index.css">
+    <link rel="stylesheet" href="assets/css/footer.css">
+    <link rel="stylesheet" href="assets/css/projets.css">
+    <link rel="stylesheet" href="assets/css/parametres.css">
 </head>
 
 <body>
-    <?php
-    if (isset($_SESSION['id'])) {
-        $id = $_SESSION['id'];
-        $sql = $db->prepare("SELECT * FROM gestion_utilisateurs WHERE id = :id");
-        $sql->bindParam(':id', $id);
-        $sql->execute();
+    <div class="app-container">
 
-        if ($sql->rowCount() == 0) {
-            session_unset();
-            session_destroy();
-            echo '<div class="message" style="background-color: #f44336;">Votre compte a été supprimé. Vous allez être déconnecté.</div>';
-            setcookie(session_name(), '', 0, '/');
-            header("Refresh: 2; URL=index.php");
-            exit;
-        }
-
-        $inactive_time = 900;
-        if (isset($_SESSION['last_activity'])) {
-            $session_lifetime = time() - $_SESSION['last_activity'];
-
-            if ($session_lifetime > $inactive_time) {
-                session_unset();
-                session_destroy();
-                setcookie(session_name(), '', 0, '/');
-                header("Location: index.php");
-                exit;
-            }
-        }
-    }
-
-    $_SESSION['last_activity'] = time();
-
-    if (isset($_GET['logout'])) {
-        session_destroy();
-        setcookie(session_name(), '', 0, '/');
-        header("Location: index.php");
-        exit;
-    }
-    ?>
-    <?php
-    $sql = $db->prepare("SELECT * FROM gestion_utilisateurs WHERE id = :id");
-    $sql->bindParam(':id', $_SESSION['id']);
-    $sql->execute();
-    $user = $sql->fetch();
-
-    if (isset($_POST['add_task'])) {
-        $task = $_POST['task'];
-        $type = htmlspecialchars($_POST['type']);
-        $priority = htmlspecialchars($_POST['priority']);
-        $sql = $db->prepare("INSERT INTO gestion_projet (description, type, priorite) VALUES (:task, :type, :priority)");
-        $sql->bindParam(':task', $task);
-        $sql->bindParam(':type', $type);
-        $sql->bindParam(':priority', $priority);
-        $sql->execute();
-        header("Location: index.php");
-        exit;
-    }
-
-    if (isset($_POST['assign_task'])) {
-        $task_id = htmlspecialchars($_POST['task_id']);
-        $date_debut = date('Y-m-d');
-        $sql = $db->prepare("UPDATE gestion_projet SET attribuee = :id_utilisateur, etat = 'En cours', date_debut = :date_debut WHERE id = :id");
-        $sql->bindParam(':id', $task_id);
-        $sql->bindParam(':id_utilisateur', $_SESSION['id']);
-        $sql->bindParam(':date_debut', $date_debut);
-        $sql->execute();
-        header("Location: index.php");
-        exit;
-    }
-
-
-    if (isset($_POST['delete_assign_task'])) {
-        $task_id = htmlspecialchars($_POST['task_id']);
-        $sql = $db->prepare("UPDATE gestion_projet SET attribuee = NULL, etat = 'A faire', date_debut = NULL, date_fin = NULL WHERE id = :id");
-        $sql->bindParam(':id', $task_id);
-        $sql->execute();
-        header("Location: index.php");
-        exit;
-    }
-
-    if (isset($_POST['end_task'])) {
-        $task_id = htmlspecialchars($_POST['task_id']);
-
-        $upload_dir = 'uploads/' . $task_id . '/';
-        if (file_exists($upload_dir)) {
-            array_map('unlink', glob($upload_dir . "*"));
-
-            $sql = $db->prepare("DELETE FROM task_files WHERE task_id = :task_id");
-            $sql->bindParam(':task_id', $task_id);
-            $sql->execute();
-        }
-
-        if (!file_exists($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
-        }
-
-        if (isset($_FILES['task_files']) && count($_FILES['task_files']['name']) > 0) {
-            foreach ($_FILES['task_files']['tmp_name'] as $key => $tmp_name) {
-                $file_name = str_replace(' ', '_', basename($_FILES['task_files']['name'][$key]));
-                $file_path = $upload_dir . $file_name;
-
-                if (move_uploaded_file($tmp_name, $file_path)) {
-                    $sql = $db->prepare("INSERT INTO task_files (task_id, file_path) VALUES (:task_id, :file_path)");
-                    $sql->bindParam(':task_id', $task_id);
-                    $sql->bindParam(':file_path', $file_path);
-                    $sql->execute();
-                }
-            }
-        }
-
-        $sql = $db->prepare("UPDATE gestion_projet SET etat = 'En attente de validation' WHERE id = :id");
-        $sql->bindParam(':id', $task_id);
-        $sql->execute();
-        header("Location: index.php");
-        exit;
-    }
-
-
-    if (isset($_POST['edit_task'])) {
-        $task_id = htmlspecialchars($_POST['task_id']);
-        $sql = $db->prepare("UPDATE gestion_projet SET etat = 'A modifier' WHERE id = :id");
-        $sql->bindParam(':id', $task_id);
-        $sql->execute();
-        header("Location: index.php");
-        exit;
-    }
-
-    if (isset($_POST['validate_task'])) {
-        $task_id = htmlspecialchars($_POST['task_id']);
-        $date_fin = date('Y-m-d');
-        $sql = $db->prepare("UPDATE gestion_projet SET etat = 'Terminé', date_fin = :date_fin WHERE id = :id");
-        $sql->bindParam(':id', $task_id);
-        $sql->bindParam(':date_fin', $date_fin);
-        $sql->execute();
-
-        header("Location: index.php");
-        exit;
-    }
-
-
-    if (isset($_POST['delete_task'])) {
-        $task_id = htmlspecialchars($_POST['task_id']);
-        $upload_dir = 'uploads/' . $task_id . '/';
-        echo "<script>
-            var confirmDelete = confirm('Voulez-vous vraiment supprimer cette tâche ?');
-            if (confirmDelete) {
-                var sql = 'DELETE FROM gestion_projet WHERE id = ' + $task_id;
-                location.href = 'index.php?delete_task=' + $task_id;
-            } else {
-                location.href = 'index.php';
-            }
-        </script>";
-        exit;
-    }
-
-    if (isset($_GET['delete_task'])) {
-        $task_id = htmlspecialchars($_GET['delete_task']);
-        $upload_dir = 'uploads/' . $task_id . '/';
-
-        if (file_exists($upload_dir)) {
-            array_map('unlink', glob($upload_dir . "*"));
-            rmdir($upload_dir);
-        }
-
-        $sql = $db->prepare("DELETE FROM task_files WHERE task_id = :task_id");
-        $sql->bindParam(':task_id', $task_id);
-        $sql->execute();
-
-        $sql = $db->prepare("DELETE FROM gestion_projet WHERE id = :id");
-        $sql->bindParam(':id', $task_id);
-        $sql->execute();
-
-        header("Location: index.php");
-        exit;
-    }
-    ?>
-    <div class="sidebar">
-        <div class="onglets">
-            <div class="toggle-sidebar" style="display: none;">&#9776;</div>
-            <img src="images/logo.jpg" alt="Logo" class="logo">
-            <h2><?php echo $project; ?></h2>
-        </div>
-        <?php if (!isset($_SESSION['id'])): ?>
-            <button onclick="location.href='login.php'" class="connexion"
-                style="position: absolute; bottom: 100px;">Connexion</button>
-        <?php else: ?>
-            <div class="onglets">
-                <a href="telecharger_dossier_projet.php">Télécharger le projet</a>
-                <br><br>
-                <a href="versions.php">Versions</a>
-                <br><br>
-                <a href="documents.php">Documents</a>
-                <br><br>
-                <a href="messages.php">Messages Privés</a>
-                <br><br>
-                <a href="tickets.php">Tickets</a>
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <span class="logo-icon">📊</span> Gestion Projets
             </div>
-            <?php if ($user['role'] === 'administrateur'): ?>
-                <button onclick="location.href='gestion.php'" class="gestion"
-                    style="position: absolute; bottom: 100px;">Gestion</button>
-            <?php endif; ?>
-            <button onclick="location.href='index.php?logout=true'" class="connexion"
-                style="position: absolute; bottom: 100px;">Deconnexion</button>
-        <?php endif; ?>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-item <?php echo $initial_section === 'projets' ? 'active' : ''; ?>">
+                        <a href="#" class="nav-link" data-section="projets">
+                            <span class="icon">📁</span> Projets
+                        </a>
+                    </li>
+                    <li class="nav-item <?php echo $initial_section === 'parametres' ? 'active' : ''; ?>">
+                        <a href="#" class="nav-link" data-section="parametres">
+                            <span class="icon">⚙️</span> Paramètres
+                        </a>
+                    </li>
+                </ul>
+                <div class="sidebar-footer">
+                    <a href="assets/php/logout.php" class="logout-link">
+                        <span class="icon">→</span> Déconnexion
+                    </a>
+                </div>
+        </aside>
+
+        <main class="main-content">
+
+            <section id="projets"
+                class="dashboard-section <?php echo $initial_section === 'projets' ? 'active' : ''; ?>">
+                <header class="main-header">
+                    <div>
+                        <h1>Mes Projets</h1>
+                        <p class="subtitle">Gérez vos projets et collaborez avec votre équipe</p>
+                    </div>
+                    <button class="new-project-button" id="open-new-project-modal">+ Nouveau projet</button>
+                </header>
+
+                <?php if ($alert_message && $initial_section === 'projets'): ?>
+                    <div class="message-alert <?php echo $alert_status; ?>"><?php echo htmlspecialchars($alert_message); ?>
+                    </div>
+                <?php endif; ?>
+
+                <div class="project-grid">
+                    <?php if (empty($projets)): ?>
+                        <p class="no-projects-message">Vous n'avez pas encore de projet. Cliquez sur "Nouveau projet" pour
+                            commencer !</p>
+                    <?php else: ?>
+                        <?php foreach ($projets as $projet):
+                            // Récupère le nombre de membres calculé
+                            $member_count = $project_member_counts[$projet['id']] ?? 1;
+                            $user_role_display = $projet['user_role'];
+                            // Formatage pour les rôles de membres (ex: developpeur -> Développeur)
+                            if ($user_role_display !== 'Chef de projet') {
+                                $user_role_display = ucfirst(str_replace('_', ' ', $user_role_display));
+                            }
+                            ?>
+                            <div class="project-card">
+                                <div class="card-header">
+                                    <span class="project-icon">📁</span>
+                                    <span
+                                        class="tag <?php echo $projet['user_role'] === 'Chef de projet' ? 'proprietary' : 'member-role'; ?>">
+                                        <?php echo htmlspecialchars($user_role_display); ?>
+                                    </span>
+                                </div>
+                                <h2 class="project-title"><?php echo htmlspecialchars($projet['nom_projet']); ?></h2>
+                                <p class="project-description">
+                                    <?php
+                                    // Affiche 'Aucune description' si le champ est vide ou NULL
+                                    echo htmlspecialchars($projet['description'] ?: 'Aucune description');
+                                    ?>
+                                </p>
+                                <div class="card-footer">
+                                    <span class="members">👤 <?php echo $member_count; ?>
+                                        membre<?php echo $member_count > 1 ? 's' : ''; ?></span>
+                                    <a href="projet.php?id=<?php echo htmlspecialchars($projet['id']); ?>"
+                                        class="open-button">Ouvrir</a>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </section>
+
+            <section id="parametres"
+                class="dashboard-section <?php echo $initial_section === 'parametres' ? 'active' : ''; ?>">
+                <header class="main-header">
+                    <div>
+                        <h1>Paramètres</h1>
+                        <p class="subtitle">Gérez vos informations personnelles et préférences</p>
+                    </div>
+                </header>
+
+                <?php if ($alert_message && $initial_section === 'parametres'): ?>
+                    <div class="message-alert <?php echo $alert_status; ?>"><?php echo htmlspecialchars($alert_message); ?>
+                    </div>
+                <?php endif; ?>
+
+                <div class="settings-block">
+                    <div class="block-header">
+                        <span class="block-icon">👤</span>
+                        <div>
+                            <h2>Informations personnelles</h2>
+                            <p>Mettez à jour vos informations de profil</p>
+                        </div>
+                    </div>
+                    <form class="settings-form" method="POST" action="assets/php/parametres.php">
+                        <div class="form-row">
+                            <div class="half-width"><label for="prenom">Prénom</label><input type="text" id="prenom"
+                                    name="prenom" value="<?php echo htmlspecialchars($user_data['prenom'] ?? ''); ?>"
+                                    required></div>
+                            <div class="half-width"><label for="nom">Nom</label><input type="text" id="nom" name="nom"
+                                    value="<?php echo htmlspecialchars($user_data['nom'] ?? ''); ?>" required></div>
+                        </div>
+                        <label for="email">Email</label>
+                        <input type="email" id="email"
+                            value="<?php echo htmlspecialchars($user_data['email'] ?? ''); ?>" disabled
+                            class="disabled-field">
+                        <p class="email-hint">L'email ne peut pas être modifié</p>
+                        <button type="submit" class="save-button" name="update_info">Enregistrer les
+                            modifications</button>
+                    </form>
+                </div>
+
+                <div class="settings-block">
+                    <div class="block-header">
+                        <span class="block-icon">🔒</span>
+                        <div>
+                            <h2>Sécurité</h2>
+                            <p>Changez votre mot de passe</p>
+                        </div>
+                    </div>
+                    <form class="settings-form" method="POST" action="assets/php/parametres.php">
+                        <label for="new-pass">Nouveau mot de passe</label>
+                        <input type="password" id="new-pass" name="new_password" required>
+                        <label for="confirm-pass">Confirmer le nouveau mot de passe</label>
+                        <input type="password" id="confirm-pass" name="confirm_password" required>
+                        <button type="submit" class="save-button" name="change_password">Changer le mot de
+                            passe</button>
+                    </form>
+                </div>
+
+                <div class="settings-block danger-zone">
+                    <div class="block-header danger-header">
+                        <span class="block-icon danger-icon">🛑</span>
+                        <div>
+                            <h2>Zone de danger</h2>
+                            <p>Supprimez définitivement votre compte et toutes vos données</p>
+                        </div>
+                    </div>
+                    <p class="danger-warning">Cette action supprimera définitivement votre compte, tous vos projets,
+                        tâches, tickets, documents et messages. Cette action ne peut pas être annulée.</p>
+                    <button type="button" class="danger-button" id="delete-account-button">Supprimer mon compte</button>
+                </div>
+
+            </section>
+
+            <footer>
+                <div class="footer-content"
+                    style="text-align:center;margin-top:20px;color:#64748b;font-size:13px;justify-content:center">
+                    <p>© <?php echo date('Y'); ?> Gestion Projets. Tous droits réservés. · <a
+                            href="privacy.php">Politique
+                            de confidentialité</a></p>
+                </div>
+            </footer>
+        </main>
     </div>
-    <div class="content" id="content">
-        <h1>Tâches</h1>
-        <?php if (isset($_SESSION['id']) && $user['role'] === 'administrateur'): ?>
-            <form method="post" action="">
-                <label for="task">Ajouter une tâche :</label>
-                <input type="text" id="task" name="task" required>
-                <label for="type">Type de tâche :</label>
-                <select id="type" name="type">
-                    <option value="Feature">Feature</option>
-                    <option value="Bug">Bug</option>
-                    <option value="Test">Test</option>
-                    <option value="Documentation">Documentation</option>
-                </select>
-                <label for="priority">Priorité de tâche :</label>
-                <select id="priority" name="priority">
-                    <option value="Basse">Basse</option>
-                    <option value="Moyenne">Moyenne</option>
-                    <option value="Elevée">Elevée</option>
-                </select>
-                <button type="submit" name="add_task">Ajouter</button>
+
+    <div id="delete-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="modal-title-danger">Confirmer la suppression</h2>
+            <p class="modal-body-danger">Êtes-vous absolument sûr de vouloir supprimer votre compte ? Cette action est
+                <strong>irréversible</strong> et toutes vos données seront perdues.
+            </p>
+
+            <div class="modal-actions">
+                <button type="button" id="cancel-delete" class="button-secondary">Annuler</button>
+                <form id="confirm-delete-form" method="POST" action="assets/php/parametres.php"
+                    style="display: inline;">
+                    <input type="hidden" name="delete_account" value="1">
+                    <button type="submit" class="button-danger">Supprimer définitivement</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="new-project-modal" class="modal-overlay hidden">
+        <div class="modal-content project-modal-content">
+            <button type="button" class="close-modal-button" id="close-new-project-modal">×</button>
+            <h2 class="project-modal-title">Créer un nouveau projet</h2>
+            <p class="project-modal-subtitle">Créez un nouveau projet pour votre équipe</p>
+
+            <form method="POST" action="assets/php/projets.php">
+                <div class="form-group">
+                    <label for="project-name">Nom du projet <span style="color: #e74c3c;">*</span></label>
+                    <input type="text" id="project-name" name="nom_projet" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="project-description">Description</label>
+                    <textarea id="project-description" name="description" rows="4"></textarea>
+                </div>
+
+                <button type="submit" class="project-modal-button" name="create_project">Créer le projet</button>
             </form>
-            <br><br>
-        <?php endif; ?>
-        <?php
-        $query = $db->query("SELECT * FROM gestion_projet");
-        $columns = $query->fetchAll(PDO::FETCH_ASSOC);
-
-        if (count($columns) === 0) {
-            echo "<p>Il n'y a aucune tâche.</p>";
-        } else {
-
-            echo "<table class='table' border='1'>";
-            echo "<tr>";
-
-            foreach ($columns[0] as $field => $value) {
-                echo "<th>" . htmlspecialchars($field) . "</th>";
-            }
-
-            if (isset($_SESSION['id'])) {
-                echo "<th>Attribuer</th>";
-                echo "<th>Action</th>";
-                echo "<th>Fichier(s)</th>";
-            }
-
-            if (isset($_SESSION['id']) && $user['role'] === 'administrateur') {
-                echo "<th>Supprimer</th>";
-            }
-
-            echo "</tr>";
-
-            foreach ($columns as $column) {
-                echo "<tr>";
-
-                foreach ($column as $value) {
-                    echo "<td>" . htmlspecialchars($value) . "</td>";
-                }
-
-                if (isset($_SESSION['id']) && empty($column['attribuee'])) {
-                    echo "<td>";
-                    echo "<form method='post' action='' style='display:inline;'>";
-                    echo "<input type='hidden' name='task_id' value='" . htmlspecialchars($column['id']) . "' />";
-                    echo "<button type='submit' name='assign_task'>Attribuer</button>";
-                    echo "</form>";
-                    echo "</td>";
-                } elseif (isset($_SESSION['id']) && !empty($column['attribuee'])) {
-                    if ($user['role'] === 'administrateur') {
-                        echo "<td>";
-                        echo "<form method='post' action='' style='display:inline;'>";
-                        echo "<input type='hidden' name='task_id' value='" . htmlspecialchars($column['id']) . "' />";
-                        echo "<button type='submit' name='delete_assign_task'>Supprimer</button>";
-                        echo "</form>";
-                        echo "</td>";
-                    } else {
-                        echo "<td>" . "" . "</td>";
-                    }
-                }
-
-                if (isset($_SESSION['id']) && $column['attribuee'] === $user['id'] && ($column['etat'] === 'En cours' || $column['etat'] === 'A modifier')) {
-                    echo "<td>";
-                    echo "<form method='post' action='' style='display:inline;' enctype='multipart/form-data'>";
-                    echo "<input type='hidden' name='task_id' value='" . htmlspecialchars($column['id']) . "' />";
-                    echo "<label for='file_upload'>Uploader des fichiers :</label>";
-                    echo "<input type='file' name='task_files[]' multiple />";
-                    echo "<button type='submit' name='end_task'>Terminer</button>";
-                    echo "</form>";
-                    echo "</td>";
-                } elseif (isset($_SESSION['id']) && $user['role'] === 'administrateur' && $column['etat'] === 'En attente de validation') {
-                    echo "<td>";
-                    echo "<form method='post' action='' style='display:inline;'>";
-                    echo "<input type='hidden' name='task_id' value='" . htmlspecialchars($column['id']) . "' />";
-                    echo "<button type='submit' name='edit_task'>A modifier</button> <button type='submit' name='validate_task'>Valider</button>";
-                    echo "</form>";
-                    echo "</td>";
-                } elseif (isset($_SESSION['id'])) {
-                    echo "<td>" . "" . "</td>";
-                }
-
-                if (isset($_SESSION['id'])) {
-                    $sql_files = $db->prepare("SELECT * FROM task_files WHERE task_id = :task_id");
-                    $sql_files->bindParam(':task_id', $column['id']);
-                    $sql_files->execute();
-                    $files = $sql_files->fetchAll(PDO::FETCH_ASSOC);
-
-                    if (count($files) > 0) {
-                        echo "<td>";
-                        foreach ($files as $file) {
-                            echo "<a href='" . htmlspecialchars($file['file_path']) . "' download>" . htmlspecialchars(basename($file['file_path'])) . "</a><br><br>";
-                        }
-                        echo "</td>";
-                    } else {
-                        echo "<td>Aucun fichier</td>";
-                    }
-
-                }
-
-                if (isset($_SESSION['id']) && $user['role'] === 'administrateur') {
-                    echo "<td>";
-                    echo "<form method='post' action='' style='display:inline;'>";
-                    echo "<input type='hidden' name='task_id' value='" . htmlspecialchars($column['id']) . "' />";
-                    echo "<button type='submit' name='delete_task'>Supprimer</button>";
-                    echo "</form>";
-                    echo "</td>";
-                }
-                echo "</tr>";
-            }
-            echo "</table>";
-        }
-        ?>
+        </div>
     </div>
+
+    <script src="assets/javascript/index.js"></script>
 </body>
 
 </html>

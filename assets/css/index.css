@@ -1,0 +1,196 @@
+/* ============================================================================
+   LAYOUT PRINCIPAL DU DASHBOARD
+   ============================================================================ */
+
+/* Layout sticky footer : sidebar + contenu principal sur toute la hauteur */
+html, body { height: 100%; }
+body { display: flex; flex-direction: column; min-height: 100vh; }
+.app-container { display: flex; flex-direction: row; flex: 1 0 auto; width: 100%; }
+.main-content { flex: 1 0 auto; display: flex; flex-direction: column; }
+.main-content > footer { margin-top: auto; width: 100%; }
+
+/* ============================================================================
+   STYLES DE BASE
+   ============================================================================ */
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f7f9;
+}
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ============================================================================
+   SIDEBAR (BARRE LAT\u00c9RALE DE NAVIGATION)
+   ============================================================================ */
+
+.sidebar {
+    width: 250px;
+    background-color: #ffffff;
+    border-right: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.sidebar-header {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    padding: 0 20px 30px 20px;
+    display: flex;
+    align-items: center;
+}
+
+.logo-icon {
+    font-size: 24px;
+    margin-right: 10px;
+}
+
+/* Navigation */
+.sidebar-nav {
+    flex-grow: 1;
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nav-item {
+    margin: 5px 0;
+}
+
+/* Liens de navigation avec effet hover et état actif */
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    text-decoration: none;
+    color: #666;
+    transition: background-color 0.2s, color 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.nav-item.active .nav-link {
+    background-color: #f4f7f9;
+    color: #1e293b;
+    font-weight: 600;
+    border-left: 3px solid #1e293b;
+}
+
+.nav-link:hover {
+    background-color: #f4f7f9;
+}
+
+.nav-link .icon {
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+/* Sidebar Footer (Déconnexion) */
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.logout-link {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    text-decoration: none;
+    color: #dc3545;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.logout-link .icon {
+    margin-right: 10px;
+    transform: rotate(180deg);
+}
+
+.logout-link:hover {
+    color: #a72836;
+}
+
+/* Contenu Principal */
+.main-content {
+    flex-grow: 1;
+    padding: 30px 40px;
+}
+
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.main-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.main-content .subtitle {
+    font-size: 14px;
+    color: #666;
+    margin: 5px 0 0 0;
+}
+
+.new-project-button {
+    background-color: #1e293b;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.new-project-button:hover {
+    background-color: #334155;
+}
+
+/* Ajout pour la gestion des sections (onglets) */
+.dashboard-section {
+    display: none;
+    /* Toutes les sections sont cachées par défaut */
+}
+
+.dashboard-section.active {
+    display: block;
+    /* La section active est affichée */
+}
+
+/* ============================================================
+   RESPONSIVE MOBILE (<= 760px)
+   Réorganisation pour éviter le zoom automatique et les débordements
+   ============================================================ */
+@media (max-width: 760px) {
+    .app-container { flex-direction: column; }
+    .sidebar { width: 100%; padding: 12px 0; border-right: none; border-bottom: 1px solid #e0e0e0; }
+    .sidebar-header { padding: 0 16px 12px 16px; font-size: 16px; }
+    .sidebar-nav ul { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px 12px 12px; }
+    .nav-item { flex: 1 0 45%; margin: 0; }
+    .nav-link { padding: 8px 12px; font-size: 13px; border-left: 0; border: 1px solid #e2e8f0; border-radius: 6px; justify-content: center; }
+    .nav-item.active .nav-link { border-color: #1e293b; }
+    .sidebar-footer { padding: 10px 16px; }
+    .main-content { padding: 18px 16px; }
+    .main-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .main-header h1 { font-size: 22px; }
+    .new-project-button { width: 100%; }
+    .settings-form .form-row { flex-direction: column; }
+    .settings-form .half-width { width: 100%; }
+}

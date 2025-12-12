@@ -1,0 +1,51 @@
+/* ============================================================================
+   PAGE POLITIQUE DE CONFIDENTIALITÉ
+   ============================================================================ */
+
+/* Conteneur centré pour le contenu de la politique */
+.container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 16px;
+}
+
+/* ============================================================================
+   TYPOGRAPHIE
+   ============================================================================ */
+
+h1 {
+    font-size: 28px;
+    margin-bottom: 12px
+}
+
+h2 {
+    font-size: 20px;
+    margin-top: 28px
+}
+
+p,
+li {
+    line-height: 1.6
+}
+
+.updated {
+    color: #64748b;
+    font-size: 13px;
+    margin-bottom: 24px
+}
+
+.card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px
+}
+
+a {
+    color: #2563eb;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}

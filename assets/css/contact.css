@@ -1,0 +1,32 @@
+/* ============================================================================
+   PAGE DE CONTACT
+   ============================================================================
+   Formulaire de contact avec pré-remplissage des données utilisateur
+*/
+
+/* Layout de base pour éviter le défilement inutile en bas */
+html, body { height: 100%; margin: 0; }
+body { display: flex; flex-direction: column; min-height: 100vh; }
+.app-container { display: flex; flex-direction: column; flex: 1 0 auto; }
+.main-content { flex: 1 0 auto; display: flex; flex-direction: column; }
+.main-content > footer { margin-top: auto; width: 100%; }
+
+/* Structure du formulaire */
+.main-content .card { padding: 16px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; }
+.form-grid { display: grid; gap: 12px; }
+.form-row { display: flex; flex-direction: column; gap: 6px; }
+.form-row label { font-weight: 600; }
+
+/* Champs de formulaire avec focus states */
+.form-row input, .form-row textarea { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+.form-row input:focus, .form-row textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+
+/* Boutons d'action */
+.form-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+.btn.primary { background: #3b82f6; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; }
+.btn.primary:hover { background: #2563eb; }
+
+/* Messages d'alerte */
+.alert { padding: 10px 12px; border-radius: 6px; margin-bottom: 12px; }
+.alert.success { background: #ecfdf5; border: 1px solid #10b981; color: #065f46; }
+.alert.error { background: #fef2f2; border: 1px solid #ef4444; color: #7f1d1d; }

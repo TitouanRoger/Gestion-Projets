@@ -1,7 +1,113 @@
-<FilesMatch "\.(pdf)$">
-    RewriteEngine On
-    RewriteCond %{HTTP_COOKIE} !^.*PHPSESSID=.*$ [NC]
-    RewriteRule ^.*$ /index.php [R=302,L]
+# ============================================================
+# .HTACCESS - CONFIGURATION APACHE POUR GESTION_PROJET
+# ============================================================
+# Protections de sécurité pour le projet de gestion
+# ============================================================
+
+# --- PROTECTION DU FICHIER .ENV ---
+# Bloquer l'accès direct au fichier de configuration
+<Files ".env">
+    Require all denied
+</Files>
+
+# --- PROTECTION DES FICHIERS SENSIBLES ---
+# Bloquer l'accès aux fichiers de configuration et sauvegarde
+<FilesMatch "\.(env|log|sql|bak|backup|swp|old|txt|md)$">
+    Require all denied
 </FilesMatch>
 
-ErrorDocument 404 /404.php
+# --- DÉSACTIVER LE LISTING DE RÉPERTOIRES ---
+Options -Indexes
+
+# --- PROTECTION CONTRE LES INJECTIONS ---
+# Bloquer les requêtes avec des patterns suspects
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Bloquer l'accès aux fichiers cachés (sauf .well-known pour Let's Encrypt)
+    RewriteCond %{REQUEST_URI} "!(^|/)\.well-known/([^./]+./?)+$" [NC]
+    RewriteCond %{SCRIPT_FILENAME} -d [OR]
+    RewriteCond %{SCRIPT_FILENAME} -f
+    RewriteRule "(^|/)\." - [F]
+    
+    # Bloquer les tentatives d'injection SQL courantes
+    RewriteCond %{QUERY_STRING} (union|select|insert|drop|delete|update|concat|cast|script) [NC]
+    RewriteRule .* - [F,L]
+    
+    # Bloquer les tentatives de traversée de répertoire
+    RewriteCond %{QUERY_STRING} \.\.\/ [NC,OR]
+    RewriteCond %{QUERY_STRING} \.\.\\ [NC,OR]
+    RewriteCond %{QUERY_STRING} ^.*(\[|\]|\(|\)|<|>|'|") [NC]
+    RewriteRule .* - [F,L]
+</IfModule>
+
+# --- LIMITATION DE LA TAILLE DES UPLOADS ---
+# Limite à 10MB par fichier (ajustable selon besoins)
+php_value upload_max_filesize 10M
+php_value post_max_size 10M
+
+# --- DÉSACTIVER L'AFFICHAGE DES ERREURS PHP ---
+# En production, les erreurs doivent être loggées, pas affichées
+php_flag display_errors Off
+php_flag display_startup_errors Off
+php_value error_reporting 0
+
+# --- EN-TÊTES DE SÉCURITÉ HTTP ---
+<IfModule mod_headers.c>
+    # Protection XSS
+    Header set X-XSS-Protection "1; mode=block"
+    
+    # Empêcher le MIME sniffing
+    Header set X-Content-Type-Options "nosniff"
+    
+    # Protection contre le clickjacking
+    Header set X-Frame-Options "SAMEORIGIN"
+    
+    # Référer Policy
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Permissions Policy (anciennement Feature-Policy)
+    Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    
+    # Content Security Policy (à adapter selon vos besoins)
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self';"
+</IfModule>
+
+# --- FORCER HTTPS (à décommenter en production avec certificat SSL) ---
+# <IfModule mod_rewrite.c>
+#     RewriteEngine On
+#     RewriteCond %{HTTPS} off
+#     RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# </IfModule>
+
+# --- CACHE CONTROL POUR LES RESSOURCES STATIQUES ---
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Images
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    
+    # CSS et JavaScript
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    
+    # Fonts
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/ttf "access plus 1 year"
+    
+    # HTML et PHP (pas de cache)
+    ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# --- COMPRESSION GZIP ---
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE application/javascript application/json
+    AddOutputFilterByType DEFLATE application/xml application/xhtml+xml
+</IfModule>

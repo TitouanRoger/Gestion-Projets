@@ -1,0 +1,18 @@
+/* ============================================================
+   FOOTER.CSS - PIED DE PAGE GLOBAL
+   ============================================================
+   Rôle: footer sticky en bas de page, commun à toutes les vues.
+   Pré-requis layout: html, body height:100%; conteneur principal
+   en flex column avec le contenu en flex:1 pour pousser le footer.
+   ============================================================ */
+/* Footer global styles */
+footer { margin-top: auto; width: 100%; padding: 12px 0; border-top: 1px solid #e5e7eb; }
+.footer-content { display: flex; justify-content: center; align-items: center; gap: 8px; }
+.footer-content p { margin: 0; color: #64748b; font-size: 13px; }
+.footer-content a { color: #2563eb; text-decoration: none; }
+.footer-content a:hover { text-decoration: underline; }
+
+/* Sticky baseline: le body des pages doit être un flex column avec
+   min-height:100vh. Le conteneur principal (main/app) doit occuper
+   l'espace disponible (flex:1 0 auto) pour pousser le footer en bas. */
+html, body { height: 100%; }

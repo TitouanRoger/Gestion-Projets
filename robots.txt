@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://gestion-projets.adkynet.eu/sitemap.xml

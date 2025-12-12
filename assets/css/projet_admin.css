@@ -1,0 +1,576 @@
+/* ============================================================
+    PROJET_ADMIN.CSS - STYLES ADMINISTRATION DE PROJET
+    ============================================================
+    Structure et styles pour la page d'administration:
+    - Layout global (flex column, min-height)
+    - En-tête (retour, titre, suppression projet)
+    - Bloc membres (liste, états, actions)
+    - Modales (ajout, édition, suppression)
+    Footer sticky géré par footer.css
+    ============================================================ */
+/* --- Conteneur global --- */
+.project-admin-page-body {
+    background-color: #f4f7f9;
+    font-family: 'Inter', sans-serif;
+    /* Assurez-vous que Inter est bien défini dans index.css */
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+html, body { overflow-x: hidden; }
+
+.project-admin-container {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 30px 20px;
+    box-sizing: border-box;
+    flex: 1 0 auto;
+    overflow-x: hidden;
+}
+
+/* Sticky footer baseline handled by footer.css; keep page layout only */
+
+/* --- En-tête de la page d'administration --- */
+.project-admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    /* Aligne les éléments en haut si les blocs ont des hauteurs différentes */
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.project-admin-header-left {
+    flex-grow: 1;
+}
+
+.project-admin-header .back-link {
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    text-decoration: none;
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    margin-bottom: 15px;
+    /* Espace sous le bouton retour */
+    display: inline-block;
+    /* Pour que margin-bottom fonctionne */
+}
+
+.project-admin-header .back-link:hover {
+    background-color: #eef;
+}
+
+.project-admin-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #333;
+    margin: 10px 0 5px 0;
+    /* Ajustement des marges */
+}
+
+.project-admin-header .subtitle {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+}
+
+.delete-project-button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+    /* Empêche le texte de passer à la ligne */
+}
+
+.delete-project-button:hover {
+    background-color: #a72836;
+}
+
+/* --- Bloc d'administration (Membres) --- */
+.admin-block {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    margin-bottom: 25px;
+    box-sizing: border-box;
+    overflow-x: hidden; /* empêcher le scroll horizontal dans le bloc */
+}
+
+/* Tables de membres/roles: empêcher débordements horizontaux */
+.members-table,
+.roles-table,
+.admin-block table {
+    width: 100%;
+    table-layout: fixed; /* colonnes de largeur fixe pour contenir le contenu */
+    border-collapse: collapse;
+}
+.admin-block table th,
+.admin-block table td {
+    word-break: break-word; /* couper les longues chaînes (emails, noms) */
+    white-space: normal;
+}
+.member-actions {
+    flex-wrap: wrap; /* permettre retour à la ligne des boutons */
+    gap: 8px;
+}
+.member-actions button,
+.member-actions form {
+    max-width: 100%;
+}
+
+.admin-block .block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.admin-block h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.admin-block .block-subtitle {
+    font-size: 14px;
+    color: #666;
+    margin-top: 0;
+    margin-bottom: 25px;
+    border-bottom: 1px solid #eee;
+    /* Ligne de séparation */
+    padding-bottom: 15px;
+}
+
+.add-member-button {
+    background-color: #1e293b;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+
+.add-member-button:hover {
+    background-color: #334155;
+}
+
+/* --- État "Aucun membre" --- */
+.no-members-state {
+    text-align: center;
+    padding: 50px 20px;
+}
+
+.no-members-icon {
+    font-size: 60px;
+    color: #cbd5e1;
+    /* Gris clair */
+    display: block;
+    margin-bottom: 20px;
+}
+
+.no-members-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.no-members-text {
+    font-size: 15px;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.add-first-member-button {
+    background-color: #1e293b;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.add-first-member-button:hover {
+    background-color: #334155;
+}
+
+/* --- Styles pour la liste des membres (mis à jour) --- */
+
+.member-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 15px;
+    /* Taille de base */
+}
+
+.member-item:last-child {
+    border-bottom: none;
+}
+
+/* Style spécifique pour la ligne du Propriétaire */
+.member-item.member-owner {
+    background-color: #f8f9fa;
+    /* Léger fond gris */
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.member-item.member-owner .member-role {
+    /* Nouvelle couleur pour Chef de projet (qui était Propriétaire) */
+    background-color: #007bff;
+    /* Bleu Bootstrap ou similaire */
+    color: white;
+    font-weight: 600;
+}
+
+.member-owner .owner-note {
+    font-size: 13px;
+    color: #6c757d;
+    font-style: italic;
+    margin-right: 10px;
+}
+
+.member-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+    flex-grow: 1;
+}
+
+.member-role {
+    font-size: 14px;
+    color: #666;
+    background-color: #f0f4f8;
+    padding: 5px 10px;
+    border-radius: 4px;
+    margin-right: 20px;
+    white-space: nowrap;
+    /* Empêche le rôle de se casser */
+    min-width: 100px;
+    text-align: center;
+}
+
+/* Boutons d'action */
+.member-actions {
+    display: flex;
+    align-items: center;
+}
+
+.member-actions button {
+    background-color: #e0e0e0;
+    color: #333;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    margin-left: 10px;
+    transition: background-color 0.2s;
+}
+
+.member-actions button:hover {
+    background-color: #d0d0d0;
+}
+
+/* Bouton Retirer / Supprimer */
+.member-actions .button-remove-member {
+    background-color: #dc3545;
+    /* Rouge clair */
+    color: white;
+    /* Retire la marge gauche car il est dans un formulaire en ligne */
+    margin-left: 0;
+}
+
+.member-actions form {
+    /* Marge entre le bouton Modifier et le bouton Retirer */
+    margin-left: 10px;
+}
+
+.member-actions .button-remove-member:hover {
+    background-color: #c82333;
+    /* Rouge foncé */
+}
+
+/* Style du bouton "Ajouter un autre membre" en bas de la liste */
+.block-footer {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    margin-top: 20px;
+}
+
+/* ------------------------------------- */
+/* --- STYLES GÉNÉRIQUES DES MODALES --- */
+/* ------------------------------------- */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    /* Fond sombre */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* Assure que la modale est au-dessus de tout */
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+/* Style de la GRANDE modale (pour la suppression) */
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 450px;
+    text-align: center;
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Styles spécifiques à la modale de DANGER (Suppression) */
+.modal-title-danger {
+    font-size: 24px;
+    color: #dc3545;
+    /* Rouge danger */
+    margin-bottom: 15px;
+    font-weight: 700;
+}
+
+.modal-body-danger {
+    font-size: 15px;
+    color: #495057;
+    /* Texte gris foncé */
+    line-height: 1.5;
+    margin-bottom: 30px;
+}
+
+.modal-body-danger strong {
+    /* Assure que le texte important est en gras */
+    color: #dc3545;
+    /* Couleur rouge pour insister sur la dangerosité */
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    /* Aligner les boutons à droite */
+    gap: 10px;
+}
+
+/* Bouton secondaire (Annuler) */
+.button-secondary {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #ced4da;
+    padding: 10px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.button-secondary:hover {
+    background-color: #e2e6ea;
+}
+
+/* Bouton principal de danger (Confirmer suppression) */
+.button-danger {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.button-danger:hover {
+    background-color: #c82333;
+}
+
+
+/* ------------------------------------------- */
+/* --- STYLES SPÉCIFIQUES POUR MODALES ADD/EDIT --- */
+/* ------------------------------------------- */
+
+/* Style de la PETITE modale (pour l'ajout et l'édition de rôle) */
+.modal-content-small {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+}
+
+.modal-close-button {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #6c757d;
+}
+
+.modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 5px;
+    text-align: left;
+}
+
+.modal-subtitle {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+.modal-subtitle strong {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* Styles pour le formulaire dans la modale d'ajout */
+.modal-content-small label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    text-align: left;
+}
+
+.modal-content-small input[type="email"],
+.modal-content-small select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 15px;
+    box-sizing: border-box;
+}
+
+/* Style spécifique pour le bouton d'ajout/modification (couleur sombre) */
+.modal-content-small .button-primary-dark {
+    width: 100%;
+    background-color: #1e293b;
+    color: white;
+    border: none;
+    padding: 12px 0;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 30px;
+    transition: background-color 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-content-small .button-primary-dark:hover {
+    background-color: #334155;
+}
+
+/* Animation simple d'apparition */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+
+/* ------------------------------------------- */
+/* --- STYLES DES ALERTES PHP --- */
+/* ------------------------------------------- */
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.alert-danger {
+    color: #721c24;
+    /* Texte rouge foncé */
+    background-color: #f8d7da;
+    /* Fond rose clair */
+    border-color: #f5c6cb;
+    /* Bordure rose/rouge */
+}
+
+.alert-success {
+    color: #155724;
+    /* Texte vert foncé */
+    background-color: #d4edda;
+    /* Fond vert clair */
+    border-color: #c3e6cb;
+    /* Bordure vert/bleu */
+}
+
+/* ============================================================
+   RESPONSIVE MOBILE (<= 760px)
+   ============================================================ */
+@media (max-width: 760px) {
+    .project-admin-container { padding: 18px 14px; }
+    .project-admin-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .delete-project-button { width: 100%; justify-content: center; }
+    .admin-block { padding: 18px 16px; }
+    .members-table, .roles-table { font-size: 13px; }
+    table thead tr th, table tbody tr td { padding: 6px 8px; }
+    .modal-content, .modal-content-small { width: 100%; max-width: 100%; }
+}

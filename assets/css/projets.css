@@ -1,0 +1,195 @@
+/* ============================================================
+    PROJETS.CSS - LISTE DES PROJETS
+    ============================================================
+    Styles pour:
+    - Grille responsive des projets
+    - Cartes (header, tags, description, footer)
+    - Modale de création de projet
+    ============================================================ */
+/* --- Styles des Cartes de Projet --- */
+
+.project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+.project-card {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s;
+}
+
+.project-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.project-icon {
+    font-size: 20px;
+    color: #1e293b;
+}
+
+.tag {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.tag.proprietary {
+    background-color: #f0f4f8;
+    color: #334155;
+}
+
+.project-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 5px 0;
+}
+
+.project-description {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 20px;
+    flex-grow: 1;
+    /* Pousse le footer vers le bas */
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.members {
+    font-size: 14px;
+    color: #999;
+}
+
+.open-button {
+    background-color: #1e293b;
+    color: white;
+    border: none;
+    text-decoration: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.open-button:hover {
+    background-color: #334155;
+}
+
+.no-projects-message {
+    grid-column: 1 / -1;
+    /* Prend toute la largeur de la grille */
+    text-align: center;
+    color: #666;
+    padding: 50px 0;
+    font-style: italic;
+}
+
+
+/* --- Styles pour la Modale de Création de Projet (image_cdfb7d.png) --- */
+
+/* La partie .modal-overlay est déjà dans parametres.css, mais pour être sûr... */
+.modal-overlay.hidden {
+    display: none;
+}
+
+/* Modale de projet : plus large que celle de suppression */
+.project-modal-content {
+    max-width: 550px;
+    padding: 35px;
+    position: relative;
+}
+
+.project-modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+}
+
+.project-modal-subtitle {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 25px;
+}
+
+.close-modal-button {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #999;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close-modal-button:hover {
+    color: #333;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 40px;
+}
+
+.project-modal-button {
+    width: 100%;
+    background-color: #1e293b;
+    color: white;
+    border: none;
+    padding: 12px 15px;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: background-color 0.2s;
+}
+
+.project-modal-button:hover {
+    background-color: #334155;
+}
