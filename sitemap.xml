@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://gestion-projets.adkynet.eu/index.php</loc>
+    <loc>https://gestion-projets.devstackutilities.ovh/index.php</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://gestion-projets.adkynet.eu/auth.php</loc>
+    <loc>https://gestion-projets.devstackutilities.ovh/auth.php</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://gestion-projets.adkynet.eu/privacy.php</loc>
+    <loc>https://gestion-projets.devstackutilities.ovh/privacy.php</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

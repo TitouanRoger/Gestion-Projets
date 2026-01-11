@@ -47,17 +47,18 @@ try {
     // Log de l'envoi de message de contact
     log_activity($pdo, $userId, 'contact_message', 'Message de contact envoyé');
 
-    // Charger l'email de destination depuis .env
-    require_once __DIR__ . '/env.php';
-    $to = env('CONTACT_EMAIL');
+    // Récupération des données d'envoi du .env
+    $to = $_ENV['CONTACT_EMAIL'] ?? '';
+    $mail_from_name = $_ENV['MAIL_FROM_NAME'] ?? 'Gestion de Projets';
+    $mail_from_address = $_ENV['MAIL_FROM_ADDRESS'] ?? 'ne-pas-repondre@localhost';
 
     // Construire et envoyer l'email
-    $subject = '[Contact] ' . $sujet;
+    $subject = '[Contact] ' . $sujet . ' - Gestion de Projets';
     $body = "Prénom: {$prenom}\nNom: {$nom}\nEmail: {$email}\n\nMessage:\n{$message}";
-    $headers = "From: " . $_ENV['MAIL_FROM_ADDRESS'] . "\r\n" .
+    $headers = "From: " . $mail_from_name . " <" . $mail_from_address . ">\r\n" .
         "Reply-To: " . $email . "\r\n" .
         "Content-Type: text/plain; charset=UTF-8\r\n";
-    @mail($to, $subject, $body, $headers);
+    mail($to, $subject, $body, $headers);
 
     header("Location: {$redirect}?success=" . urlencode("Merci ! Votre message a été envoyé."));
     exit();

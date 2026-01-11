@@ -51,8 +51,8 @@ if (isset($_POST['submit_forgot'])) {
             $reset_link = "$protocol://$host/reset_password.php?token=" . $token;
 
             // Récupération des données d'envoi du .env
-            $mail_from_name = $_ENV['MAIL_FROM_NAME'] ?? 'Support Technique';
-            $mail_from_address = $_ENV['MAIL_FROM_ADDRESS'] ?? 'no-reply@localhost';
+            $mail_from_name = $_ENV['MAIL_FROM_NAME'] ?? 'Gestion de Projets';
+            $mail_from_address = $_ENV['MAIL_FROM_ADDRESS'] ?? 'ne-pas-repondre@localhost';
 
 
             $to = $email;
